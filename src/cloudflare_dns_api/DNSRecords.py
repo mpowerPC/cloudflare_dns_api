@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-cloudflare_api.dns
+cloudflare_dns_api.DNSRecords
 ~~~~~~~~~~~~~
 
 """
@@ -10,7 +10,7 @@ import json
 BASE_URL = "https://api.cloudflare.com/client/v4"
 
 
-class DNS(object):
+class DNSRecords(object):
     def __init__(self, token):
         self.token = token
         self.dns_records = {}
