@@ -130,3 +130,12 @@ dmypy.json
 
 # pycharm
 .idea/
+
+# pytest
+.pytest_cache/
+
+# tox
+.tox/
+
+# test test.json
+tests/test.json

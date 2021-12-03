@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = "cloudflare_dns_api"
+project = "CloudflareDNS"
 copyright = "2021, mpowerPC"
 author = "mpowerPC"
 

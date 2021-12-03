@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-cloudflare_dns_api.DNSRecords
+CloudflareDNS.cloudflare_dns
 ~~~~~~~~~~~~~
 
 """
 import requests
 import json
 
-BASE_URL = "https://api.cloudflare.com/client/v4/zones"
+BASE_URL = "https://api.cloudflare.com/client/v4/"
 
 
 def check_record(record):
@@ -77,13 +77,12 @@ def check_record(record):
         raise
 
 
-class DNSRecords(object):
+class CloudflareDNS(object):
     def __init__(self, token):
         self.headers = {
-            "Authorization": "Bearer " + token,
             "Content-Type": "application/json",
+            "Authorization": "Bearer " + token,
         }
-
         self.dns_records = {}
 
     def _get_request(self, url):
@@ -162,7 +161,8 @@ class DNSRecords(object):
         return dns_records
 
     def get_zones(self):
-        response = self._get_request(BASE_URL)
+        url = BASE_URL + "zones"
+        response = self._get_request(url)
         zones = {}
         for record in response.json()["result"]:
             zones[record["name"]] = record
@@ -175,7 +175,9 @@ class DNSRecords(object):
             self.get_zones()
 
         if zone_name in self.dns_records:
-            url = BASE_URL + "/" + self.dns_records[zone_name]["id"] + "/dns_records"
+            url = (
+                BASE_URL + "zones/" + self.dns_records[zone_name]["id"] + "/dns_records"
+            )
 
             response = self._get_request(url)
 
@@ -198,7 +200,7 @@ class DNSRecords(object):
 
         key = (new_record["name"], new_record["type"])
         if key not in old_records:
-            url = BASE_URL + "/" + zone_id + "/dns_records"
+            url = BASE_URL + "zones/" + zone_id + "/dns_records"
             self._post_request(url, new_record)
         else:
             print("Record already exists.")
@@ -216,7 +218,7 @@ class DNSRecords(object):
         if key in old_records:
             new_record["id"] = old_records[key]["id"]
             if new_record != old_records[key]:
-                url = BASE_URL + "/" + zone_id + "/dns_records/" + new_record["id"]
+                url = BASE_URL + "zones/" + zone_id + "/dns_records/" + new_record["id"]
 
                 self._put_request(url, new_record)
             else:
@@ -225,13 +227,17 @@ class DNSRecords(object):
             print("Record does not exists.")
             raise
 
+        return self.get_records(zone_name)
+
     def delete_record(self, zone_name, dns_record_name, dns_record_type):
         old_records = self.get_records(zone_name)
         zone_id = self.dns_records[zone_name]["id"]
         key = (dns_record_name, dns_record_type)
 
         if key in old_records:
-            url = BASE_URL + "/" + zone_id + "/dns_records/" + old_records[key]["id"]
+            url = (
+                BASE_URL + "zones/" + zone_id + "/dns_records/" + old_records[key]["id"]
+            )
             self._delete_request(url)
         else:
             print("Records were not deleted, unable to find DNS record identifier.")
