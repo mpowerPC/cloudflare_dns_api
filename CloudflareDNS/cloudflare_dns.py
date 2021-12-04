@@ -11,6 +11,12 @@ BASE_URL = "https://api.cloudflare.com/client/v4/"
 
 
 def check_record(record):
+    """Verifies that the submited dns record contains the necessary keys and dns types to be posted to the Cloudflare
+    API.
+
+    :param record: A DNS record.
+    :type record: dict
+    """
     valid_types = (
         "A",
         "AAAA",
@@ -78,7 +84,17 @@ def check_record(record):
 
 
 class CloudflareDNS(object):
+    """This is a class that utilizes the requests library to interact with the Cloudflare API DNS Records for a Zone
+    found: 'https://api.cloudflare.com/#dns-records-for-a-zone-properties'. Allowing for automated creation, updating and
+    deleting of DNS records in specified zones.
+
+    :param token: A Cloudflare API Token with Zone.DNS permissions.
+    :type token: str
+    """
+
     def __init__(self, token):
+        """Constructor method
+        """
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + token,
@@ -86,6 +102,12 @@ class CloudflareDNS(object):
         self.dns_records = {}
 
     def _get_request(self, url):
+        """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
+        :param url: A url to send a get request.
+        :type url: str
+        :return: A server’s response to an HTTP request.
+        :rtype: requests.Response object
+        """
         try:
             response = requests.get(url, headers=self.headers)
         except Exception as e:
@@ -98,42 +120,69 @@ class CloudflareDNS(object):
             raise
 
     def _post_request(self, url, data):
+        """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
+        :param url: A url to send a post request.
+        :type url: str
+        :param data: A payload to send with the post request.
+        :type data: dict
+        :return: A server’s response to an HTTP request.
+        :rtype: requests.Response object
+        """
         try:
             response = requests.post(url, headers=self.headers, data=json.dumps(data))
         except Exception as e:
             raise e
 
         if response.status_code == 200:
-            return True
+            return response
         else:
             print("Request failure: " + str(response.status_code))
             raise
 
     def _put_request(self, url, data):
+        """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
+        :param url: A url to send a put request.
+        :type url: str
+        :param data: A payload to send with the put request.
+        :type data: dict
+        :return: A server’s response to an HTTP request.
+        :rtype: requests.Response object
+        """
         try:
             response = requests.put(url, headers=self.headers, data=json.dumps(data))
         except Exception as e:
             raise e
 
         if response.status_code == 200:
-            return True
+            return response
         else:
             print("Request failure: " + str(response.status_code))
             raise
 
     def _delete_request(self, url):
+        """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
+        :param url: A url to send a delete request.
+        :type url: str
+        :return: A server’s response to an HTTP request.
+        :rtype: requests.Response object
+        """
         try:
             response = requests.delete(url, headers=self.headers)
         except Exception as e:
             raise e
 
         if response.status_code == 200:
-            return True
+            return response
         else:
             print("Request failure: " + str(response.status_code))
             raise
 
     def _simplified_zones(self):
+        """Returns a dict of zones attached to the API token, this dictionary is keyed on zone names.
+
+        :return: A dict of zones keyed on zone names.
+        :rtype: dict
+        """
         output = {}
         for zone_name in self.dns_records:
             record = self.dns_records[zone_name]
@@ -145,6 +194,14 @@ class CloudflareDNS(object):
         return output
 
     def _simplified_dns_records(self, zone_name):
+        """Returns a dict of dns records attached to the API token and zone, this dictionary is keyed on record name and
+         type.
+
+        :param zone_name: A Cloudflare DNS zone usually the domain name.
+        :type zone_name: str
+        :return: A dict of dns records keyed on record name and type.
+        :rtype: dict
+        """
         dns_records = {}
         for dns_record_key in self.dns_records[zone_name]["dns_records"]:
             record = self.dns_records[zone_name]["dns_records"][dns_record_key]
@@ -161,6 +218,13 @@ class CloudflareDNS(object):
         return dns_records
 
     def get_zones(self):
+        """Returns a dict of zones attached to the API token, this dictionary is keyed on zone names. This function
+         preforms a get request to 'https://api.cloudflare.com/client/v4/zones' which returns all zones attached to the
+         API token.
+
+        :return: A dict of zones keyed on zone names.
+        :rtype: dict
+        """
         url = BASE_URL + "zones"
         response = self._get_request(url)
         zones = {}
@@ -171,6 +235,16 @@ class CloudflareDNS(object):
         return self._simplified_zones()
 
     def get_records(self, zone_name):
+        """Returns a dict of dns records attached to the API token and zone, this dictionary is keyed on record name and
+         type. This function preforms a get request to
+         'https://api.cloudflare.com/client/v4/zones/<zone_name>/dns_records' which returns all dns records attached to
+         the spcified zone.
+
+        :param zone_name: A Cloudflare DNS zone usually the domain name.
+        :type zone_name: str
+        :return: A dict of dns records keyed on record name and type.
+        :rtype: dict
+        """
         if not self.dns_records:
             self.get_zones()
 
@@ -193,6 +267,18 @@ class CloudflareDNS(object):
         return self._simplified_dns_records(zone_name)
 
     def insert_record(self, zone_name, new_record):
+        """Returns a dict of dns records attached to the API token and zone, this dictionary is keyed on record name and
+         type. This function preforms a post request to
+         'https://api.cloudflare.com/client/v4/zones/<zone_name>/dns_records' which inserts the dns record into the
+         zone.
+
+        :param zone_name: A Cloudflare DNS zone usually the domain name.
+        :type zone_name: str
+        :param new_record: A DNS record.
+        :type new_record: dict
+        :return: A dict of dns records keyed on record name and type.
+        :rtype: dict
+        """
         old_records = self.get_records(zone_name)
         zone_id = self.dns_records[zone_name]["id"]
 
@@ -209,6 +295,18 @@ class CloudflareDNS(object):
         return self.get_records(zone_name)
 
     def update_record(self, zone_name, new_record):
+        """Returns a dict of dns records attached to the API token and zone, this dictionary is keyed on record name and
+         type. This function preforms a put request to
+         'https://api.cloudflare.com/client/v4/zones/<zone_name>/dns_records/<record_id>' which updates fields of the
+         dns record.
+
+        :param zone_name: A Cloudflare DNS zone usually the domain name.
+        :type zone_name: str
+        :param new_record: A DNS record.
+        :type new_record: dict
+        :return: A dict of dns records keyed on record name and type.
+        :rtype: dict
+        """
         old_records = self.get_records(zone_name)
         zone_id = self.dns_records[zone_name]["id"]
 
@@ -230,6 +328,19 @@ class CloudflareDNS(object):
         return self.get_records(zone_name)
 
     def delete_record(self, zone_name, dns_record_name, dns_record_type):
+        """Returns a dict of dns records attached to the API token and zone, this dictionary is keyed on record name and
+         type. This function preforms a delete request to
+         'https://api.cloudflare.com/client/v4/zones/<zone_name>/dns_records/<record_id>' which delete the dns record.
+
+        :param zone_name: A Cloudflare DNS zone usually the domain name.
+        :type zone_name: str
+        :param dns_record_name: DNS record name.
+        :type dns_record_name: str
+        :param dns_record_type: DNS record type.
+        :type dns_record_type: str
+        :return: A dict of dns records keyed on record name and type.
+        :rtype: dict
+        """
         old_records = self.get_records(zone_name)
         zone_id = self.dns_records[zone_name]["id"]
         key = (dns_record_name, dns_record_type)
