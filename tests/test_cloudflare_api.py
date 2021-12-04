@@ -13,9 +13,12 @@ EXAMPLE "test.json" FILE:
 """
 import CloudflareDNS
 import json
+import os
 import pytest
 
-with open("test.json") as f:
+test_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test.json")
+
+with open(test_data) as f:
     cfg = json.load(f)
     TOKEN = cfg["token"]
     ZONE = cfg["zone"]
