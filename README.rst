@@ -1,4 +1,6 @@
-cloudflare_dns_update
+CloudflareDNS
 =======
 
-**cloudflare_dns_update** is a Python script that updates "A" dns records with the public ip address of the host.
+**CloudflareDNS** is a python library for system administrators who want to automate DNS record updates on Cloudflare.
+It uses the `Cloudflare API <https://api.cloudflare.com>`_  to create, update, and delete dns records attached to a
+passed API token.
