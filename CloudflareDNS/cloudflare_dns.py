@@ -41,7 +41,7 @@ def check_record(record):
 
     record_pass = True
     for key in record:
-        if key not in ("type", "name", "content", "ttl", "priority", "proxied"):
+        if key not in ("type", "name", "content", "ttl", "priority", "proxied", "id"):
             print("Invalid record key.")
             record_pass = False
 
