@@ -39,41 +39,42 @@ def check_record(record):
         "URI",
         "read only",
     )
-
+    errors = []
     record_pass = True
     for key in record:
         if key not in ("type", "name", "content", "ttl", "priority", "proxied", "id"):
-            warnings.warn("Invalid key in DNS record: " + key)
+            errors.append("Invalid Key: " + key)
             record_pass = False
 
     if "type" in record:
         if record["type"] not in valid_types:
-            warnings.warn("Key 'type' is not a valid value: " + record["type"])
+            errors.append("Key 'type' Value Error: " + record["type"])
             record_pass = False
 
         elif record["type"] in ("MX", "SRV", "URI"):
             if "priority" not in record:
-                warnings.warn("Required key 'priority' is missing from the DNS record.")
+                errors.append("Missing Required Key: 'priority'")
                 record_pass = False
     else:
-        warnings.warn("Required key 'type' is missing from the DNS record.")
+        errors.append("Missing Required Key: 'type'")
         record_pass = False
 
     if "name" not in record:
-        warnings.warn("Required key 'name' is missing from the DNS record.")
+        errors.append("Missing Required Key: 'name'")
         record_pass = False
 
     if "content" not in record:
-        warnings.warn("Required key 'content' is missing from the DNS record.")
+        errors.append("Missing Required Key: 'content'")
         record_pass = False
 
     if "ttl" not in record:
-        warnings.warn("Required key 'ttl' is missing is missing from the DNS record.")
+        errors.append("Missing Required Key: 'ttl'")
         record_pass = False
 
     if not record_pass:
         raise ValueError(
-            "Submitted record not compliant with Cloudflare API. Check logs for exact issue."
+            "Submitted record not compliant with Cloudflare API. Issues: "
+            + json.dumps(errors)
         )
 
 
