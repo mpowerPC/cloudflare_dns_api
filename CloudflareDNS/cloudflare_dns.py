@@ -5,13 +5,14 @@ CloudflareDNS.cloudflare_dns
 
 """
 import requests
+import warnings
 import json
 
 BASE_URL = "https://api.cloudflare.com/client/v4/"
 
 
 def check_record(record):
-    """Verifies that the submited dns record contains the necessary keys and dns types to be posted to the Cloudflare
+    """Verifies that the submitted dns record contains the necessary keys and dns types to be posted to the Cloudflare
     API.
 
     :param record: A DNS record.
@@ -42,45 +43,38 @@ def check_record(record):
     record_pass = True
     for key in record:
         if key not in ("type", "name", "content", "ttl", "priority", "proxied", "id"):
-            print("Invalid record key.")
+            warnings.warn("Invalid key in DNS record: " + key)
             record_pass = False
 
     if "type" in record:
         if record["type"] not in valid_types:
-            print("Key 'type' is not a valid value.")
+            warnings.warn("Key 'type' is not a valid value: " + record["type"])
             record_pass = False
 
         elif record["type"] in ("MX", "SRV", "URI"):
-            if "priority" in record:
-                if not (0 <= record["priority"] <= 65535):
-                    print("Key 'priority' is not a valid value.")
-                    record_pass = False
-            else:
-                print("Required key 'priority' is missing.")
+            if "priority" not in record:
+                warnings.warn("Required key 'priority' is missing from the DNS record.")
                 record_pass = False
     else:
-        print("Required key 'type' is missing.")
+        warnings.warn("Required key 'type' is missing from the DNS record.")
         record_pass = False
 
     if "name" not in record:
-        print("Required key 'name' is missing.")
+        warnings.warn("Required key 'name' is missing from the DNS record.")
         record_pass = False
 
     if "content" not in record:
-        print("Required key 'content' is missing.")
+        warnings.warn("Required key 'content' is missing from the DNS record.")
         record_pass = False
 
-    if "ttl" in record:
-        if not (record["ttl"] == 1 or 60 <= record["ttl"] <= 86400):
-            print("Key 'ttl' is not a valid value.")
-            record_pass = False
-    else:
-        print("Required key 'ttl' is missing.")
+    if "ttl" not in record:
+        warnings.warn("Required key 'ttl' is missing is missing from the DNS record.")
         record_pass = False
 
     if not record_pass:
-        print("Submitted record not compliant with Cloudflare API.")
-        raise
+        raise ValueError(
+            "Submitted record not compliant with Cloudflare API. Check logs for exact issue."
+        )
 
 
 class CloudflareDNS(object):
@@ -116,8 +110,7 @@ class CloudflareDNS(object):
         if response.status_code == 200:
             return response
         else:
-            print("Request failure: " + str(response.status_code))
-            raise
+            response.raise_for_status()
 
     def _post_request(self, url, data):
         """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
@@ -136,8 +129,7 @@ class CloudflareDNS(object):
         if response.status_code == 200:
             return response
         else:
-            print("Request failure: " + str(response.status_code))
-            raise
+            response.raise_for_status()
 
     def _put_request(self, url, data):
         """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
@@ -156,8 +148,7 @@ class CloudflareDNS(object):
         if response.status_code == 200:
             return response
         else:
-            print("Request failure: " + str(response.status_code))
-            raise
+            response.raise_for_status()
 
     def _delete_request(self, url):
         """Returns a :class:`requests.Response` object which contains a server’s response to an HTTP request.
@@ -174,8 +165,7 @@ class CloudflareDNS(object):
         if response.status_code == 200:
             return response
         else:
-            print("Request failure: " + str(response.status_code))
-            raise
+            response.raise_for_status()
 
     def _simplified_zones(self):
         """Returns a dict of zones attached to the API token, this dictionary is keyed on zone names.
@@ -261,8 +251,7 @@ class CloudflareDNS(object):
 
             self.dns_records[zone_name]["dns_records"] = dns_records
         else:
-            print("Zone with name " + zone_name + " does not exist.")
-            raise
+            raise ValueError("Zone with name " + zone_name + " does not exist.")
 
         return self._simplified_dns_records(zone_name)
 
@@ -289,8 +278,7 @@ class CloudflareDNS(object):
             url = BASE_URL + "zones/" + zone_id + "/dns_records"
             self._post_request(url, new_record)
         else:
-            print("Record already exists.")
-            raise
+            warnings.warn("DNS record already exists.")
 
         return self.get_records(zone_name)
 
@@ -317,13 +305,12 @@ class CloudflareDNS(object):
             new_record["id"] = old_records[key]["id"]
             if new_record != old_records[key]:
                 url = BASE_URL + "zones/" + zone_id + "/dns_records/" + new_record["id"]
-
                 self._put_request(url, new_record)
+
             else:
-                print("Record already exists.")
+                warnings.warn("DNS record already exists.")
         else:
-            print("Record does not exists.")
-            raise
+            raise ValueError("DNS record does not exist.")
 
         return self.get_records(zone_name)
 
@@ -351,6 +338,8 @@ class CloudflareDNS(object):
             )
             self._delete_request(url)
         else:
-            print("Records were not deleted, unable to find DNS record identifier.")
+            warnings.warn(
+                "Records were not deleted, unable to find DNS record identifier."
+            )
 
         return self.get_records(zone_name)
